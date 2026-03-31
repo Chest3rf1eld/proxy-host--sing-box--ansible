@@ -1,0 +1,8 @@
+---
+- name: Install and configure sing-box
+  hosts: sing_box
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: sing_box

@@ -1,0 +1,66 @@
+- name: ensure apt keyrings directory exists
+  file:
+    path: "{{ sing_box_apt_keyring_dir }}"
+    state: directory
+    mode: "0755"
+  when:
+    - ansible_facts["os_family"] == "Debian"
+    - sing_box_manage_apt_repo
+
+- name: install sing-box apt repository key
+  get_url:
+    url: "{{ sing_box_apt_key_url }}"
+    dest: "{{ sing_box_apt_key_path }}"
+    mode: "0644"
+  when:
+    - ansible_facts["os_family"] == "Debian"
+    - sing_box_manage_apt_repo
+
+- name: install sing-box apt repository
+  copy:
+    content: "{{ sing_box_apt_source_content }}"
+    dest: "{{ sing_box_apt_source_path }}"
+    mode: "0644"
+  when:
+    - ansible_facts["os_family"] == "Debian"
+    - sing_box_manage_apt_repo
+
+- name: refresh apt cache on Debian family
+  command:
+    argv:
+      - apt-get
+      - update
+  changed_when: false
+  when: ansible_facts["os_family"] == "Debian"
+
+- name: install sing-box package on Debian family
+  apt:
+    name: "{{ sing_box_package }}"
+    state: present
+  when: ansible_facts["os_family"] == "Debian"
+
+- name: install sing-box package on non-Debian family
+  package:
+    name: "{{ sing_box_package }}"
+    state: present
+  when: ansible_facts["os_family"] != "Debian"
+
+- name: ensure sing-box config directory exists
+  file:
+    path: "{{ sing_box_config_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: deploy sing-box config
+  template:
+    src: "{{ sing_box_config_template }}"
+    dest: "{{ sing_box_config_path }}"
+    mode: "0644"
+    validate: "{{ sing_box_binary_path }} check -c %s"
+  notify: restart sing-box
+
+- name: ensure sing-box service enabled and started
+  service:
+    name: "{{ sing_box_service }}"
+    state: started
+    enabled: true

@@ -1,0 +1,39 @@
+# Ansible secrets
+*.vault
+vault.yml
+vault.yaml
+vault-pass.txt
+vault-password.txt
+
+# Environment files
+.env
+.env.*
+
+# Private keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.kdbx
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+
+# SSH material
+.ssh/
+
+# Local variable files with secrets
+/group_vars/sing_box.yml
+/inventory/hosts.yml
+/inventory/host_vars/
+/host_vars/
+
+# Ansible artifacts
+*.retry
+
+# Editor and OS files
+.DS_Store
+.idea/
+.vscode/

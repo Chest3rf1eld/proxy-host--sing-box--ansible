@@ -1,0 +1,4 @@
+- name: restart sing-box
+  service:
+    name: "{{ sing_box_service }}"
+    state: restarted

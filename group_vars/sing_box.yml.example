@@ -1,0 +1,75 @@
+sing_box_config:
+  log:
+    level: info
+  dns:
+    independent_cache: true
+    servers:
+      - type: local
+        tag: dns-local
+      - type: https
+        tag: dns-remote
+        server: dns.google
+        path: /dns-query
+        domain_resolver: dns-local
+        detour: proxy
+      - type: https
+        tag: dns-direct
+        server: doh.pub
+        path: /dns-query
+        domain_resolver: dns-local
+        detour: direct
+    rules:
+      - query_type:
+          - 32
+          - 33
+        action: reject
+      - domain_suffix:
+          - .lan
+        action: reject
+  inbounds:
+    - type: mixed
+      tag: mixed-in
+      listen: 127.0.0.1
+      listen_port: 2080
+  outbounds:
+    - type: vless
+      tag: proxy
+      server: 203.0.113.10
+      server_port: 443
+      uuid: 00000000-0000-0000-0000-000000000000
+      domain_resolver: dns-remote
+      tls:
+        enabled: true
+        server_name: example.com
+        reality:
+          enabled: true
+          public_key: REPLACE_WITH_REALITY_PUBLIC_KEY
+          short_id: 0123456789ab
+        utls:
+          enabled: true
+          fingerprint: random
+    - type: direct
+      tag: direct
+      domain_resolver: dns-direct
+  route:
+    final: proxy
+    rules:
+      - action: sniff
+      - protocol: dns
+        action: hijack-dns
+      - network: udp
+        port:
+          - 135
+          - 137
+          - 138
+          - 139
+          - 5353
+        action: reject
+      - ip_cidr:
+          - 224.0.0.0/3
+          - ff00::/8
+        action: reject
+      - source_ip_cidr:
+          - 224.0.0.0/3
+          - ff00::/8
+        action: reject

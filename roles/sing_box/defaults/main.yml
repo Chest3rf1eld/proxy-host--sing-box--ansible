@@ -1,0 +1,21 @@
+sing_box_package: sing-box
+sing_box_service: sing-box
+sing_box_config_dir: /etc/sing-box
+sing_box_config_path: "{{ sing_box_config_dir }}/config.json"
+sing_box_config_template: config.json.j2
+sing_box_binary_path: /usr/bin/sing-box
+sing_box_manage_apt_repo: true
+sing_box_apt_keyring_dir: /etc/apt/keyrings
+sing_box_apt_key_path: "{{ sing_box_apt_keyring_dir }}/sagernet.asc"
+sing_box_apt_key_url: https://sing-box.app/gpg.key
+sing_box_apt_source_path: /etc/apt/sources.list.d/sagernet.sources
+sing_box_apt_source_content: |
+  Types: deb
+  URIs: https://deb.sagernet.org/
+  Suites: *
+  Components: *
+  Enabled: yes
+  Signed-By: {{ sing_box_apt_key_path }}
+
+# Runtime sing-box configuration is expected from inventory/group vars.
+sing_box_config: {}
