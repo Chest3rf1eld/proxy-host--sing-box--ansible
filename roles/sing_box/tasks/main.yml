@@ -1,3 +1,14 @@
+- name: choose sing-box install method
+  set_fact:
+    sing_box_effective_install_method: >-
+      {{
+        sing_box_install_method
+        if sing_box_install_method != 'auto'
+        else 'archive'
+        if ansible_facts["os_family"] == "RedHat"
+        else 'package'
+      }}
+
 - name: ensure apt keyrings directory exists
   file:
     path: "{{ sing_box_apt_keyring_dir }}"
@@ -5,6 +16,18 @@
     mode: "0755"
   when:
     - ansible_facts["os_family"] == "Debian"
+    - sing_box_install_package
+    - sing_box_effective_install_method == "package"
+    - sing_box_manage_apt_repo
+
+- name: check sing-box apt repository key
+  stat:
+    path: "{{ sing_box_apt_key_path }}"
+  register: sing_box_apt_key
+  when:
+    - ansible_facts["os_family"] == "Debian"
+    - sing_box_install_package
+    - sing_box_effective_install_method == "package"
     - sing_box_manage_apt_repo
 
 - name: install sing-box apt repository key
@@ -14,7 +37,10 @@
     mode: "0644"
   when:
     - ansible_facts["os_family"] == "Debian"
+    - sing_box_install_package
+    - sing_box_effective_install_method == "package"
     - sing_box_manage_apt_repo
+    - not sing_box_apt_key.stat.exists
 
 - name: install sing-box apt repository
   copy:
@@ -23,6 +49,8 @@
     mode: "0644"
   when:
     - ansible_facts["os_family"] == "Debian"
+    - sing_box_install_package
+    - sing_box_effective_install_method == "package"
     - sing_box_manage_apt_repo
 
 - name: refresh apt cache on Debian family
@@ -31,19 +59,97 @@
       - apt-get
       - update
   changed_when: false
-  when: ansible_facts["os_family"] == "Debian"
+  when:
+    - ansible_facts["os_family"] == "Debian"
+    - sing_box_install_package
+    - sing_box_effective_install_method == "package"
 
 - name: install sing-box package on Debian family
   apt:
     name: "{{ sing_box_package }}"
     state: present
-  when: ansible_facts["os_family"] == "Debian"
+  when:
+    - ansible_facts["os_family"] == "Debian"
+    - sing_box_install_package
+    - sing_box_effective_install_method == "package"
 
-- name: install sing-box package on non-Debian family
+- name: install sing-box package on non-Debian family when requested
   package:
     name: "{{ sing_box_package }}"
     state: present
-  when: ansible_facts["os_family"] != "Debian"
+  when:
+    - ansible_facts["os_family"] != "Debian"
+    - sing_box_install_package
+    - sing_box_effective_install_method == "package"
+
+- name: ensure archive install dependencies are present
+  package:
+    name:
+      - ca-certificates
+      - tar
+      - gzip
+    state: present
+  when:
+    - sing_box_install_package
+    - sing_box_effective_install_method == "archive"
+
+- name: ensure sing-box archive architecture is supported
+  assert:
+    that:
+      - ansible_facts["architecture"] in sing_box_archive_arch_map
+    fail_msg: "Unsupported architecture for sing-box archive install: {{ ansible_facts['architecture'] }}"
+  when:
+    - sing_box_install_package
+    - sing_box_effective_install_method == "archive"
+
+- name: create temporary sing-box archive directory
+  file:
+    path: "{{ sing_box_archive_tmp_dir }}"
+    state: directory
+    mode: "0755"
+  when:
+    - sing_box_install_package
+    - sing_box_effective_install_method == "archive"
+
+- name: download and unpack sing-box archive
+  unarchive:
+    src: "{{ sing_box_archive_url }}"
+    dest: "{{ sing_box_archive_tmp_dir }}"
+    remote_src: true
+    creates: "{{ sing_box_archive_tmp_dir }}/sing-box"
+    extra_opts:
+      - --strip-components=1
+  when:
+    - sing_box_install_package
+    - sing_box_effective_install_method == "archive"
+
+- name: install sing-box binary from archive
+  copy:
+    src: "{{ sing_box_archive_tmp_dir }}/sing-box"
+    dest: "{{ sing_box_binary_path }}"
+    mode: "0755"
+    remote_src: true
+  when:
+    - sing_box_install_package
+    - sing_box_effective_install_method == "archive"
+  notify: restart sing-box
+
+- name: install sing-box systemd service for archive install
+  template:
+    src: sing-box.service.j2
+    dest: "{{ sing_box_systemd_unit_path }}"
+    mode: "0644"
+  when:
+    - sing_box_effective_install_method == "archive"
+  notify:
+    - reload systemd
+    - restart sing-box
+
+- name: reload systemd after archive service install
+  systemd:
+    daemon_reload: true
+  when:
+    - sing_box_effective_install_method == "archive"
 
 - name: ensure sing-box config directory exists
   file:

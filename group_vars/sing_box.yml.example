@@ -1,3 +1,10 @@
+---
+# Debian uses the official APT repo by default. RedHat-family systems such as
+# Sangoma OS use the GitHub release archive by default because no RPM package is
+# available in the standard repositories.
+# sing_box_install_method: auto
+# sing_box_archive_version: 1.13.12
+
 sing_box_config:
   log:
     level: info
@@ -31,6 +38,12 @@ sing_box_config:
       tag: mixed-in
       listen: 127.0.0.1
       listen_port: 2080
+    - type: tun
+      tag: tun-in
+      interface_name: singtun0
+      address: 172.19.0.1/30
+      auto_route: true
+      strict_route: true
   outbounds:
     - type: vless
       tag: proxy
@@ -52,11 +65,20 @@ sing_box_config:
       tag: direct
       domain_resolver: dns-direct
   route:
-    final: proxy
+    auto_detect_interface: true
+    final: direct
     rules:
       - action: sniff
       - protocol: dns
         action: hijack-dns
+      - domain_suffix:
+          - chatgpt.com
+          - openai.com
+          - oaistatic.com
+          - oaiusercontent.com
+          - openaiusercontent.com
+        action: route
+        outbound: proxy
       - network: udp
         port:
           - 135

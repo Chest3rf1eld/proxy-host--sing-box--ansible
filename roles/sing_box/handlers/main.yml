@@ -1,3 +1,7 @@
+- name: reload systemd
+  systemd:
+    daemon_reload: true
+
 - name: restart sing-box
   service:
     name: "{{ sing_box_service }}"
