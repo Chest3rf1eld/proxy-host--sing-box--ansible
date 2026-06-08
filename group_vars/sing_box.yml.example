@@ -74,9 +74,6 @@ sing_box_config:
       - domain_suffix:
           - chatgpt.com
           - openai.com
-          - oaistatic.com
-          - oaiusercontent.com
-          - openaiusercontent.com
         action: route
         outbound: proxy
       - network: udp

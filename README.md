@@ -25,7 +25,7 @@ After running the playbook, the target server is prepared to work as a `sing-box
 
 A typical scenario is using this host as an outbound client to connect to external services that are blocked or unavailable from your current country.
 
-The example configuration also enables a TUN inbound. It intercepts outbound traffic from the server itself, proxies only ChatGPT/OpenAI/Codex CLI domains through the `proxy` outbound, and sends all other traffic directly through the `direct` outbound.
+The example configuration also enables a TUN inbound. It intercepts outbound traffic from the server itself, proxies only `chatgpt.com` and `openai.com` through the `proxy` outbound, and sends all other traffic directly through the `direct` outbound.
 
 For Codex CLI, this covers both common modes: ChatGPT login through `chatgpt.com` and API-key mode through `api.openai.com`, because `api.openai.com` is covered by the `openai.com` suffix rule.
 
